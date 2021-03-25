@@ -2,15 +2,14 @@ import Blessed from 'blessed';
 import IComponentBuild from "./interfaces/IComponentBuild";
 
 export default class ComponentBuilder {
-    private _screen: Blessed.Widgets.Screen | undefined;
-    private _layout: Blessed.Widgets.LayoutElement | undefined;
-    private _input: Blessed.Widgets.TextareaElement | undefined;
-    private _chat: Blessed.Widgets.ListElement | undefined;
-    private _status: Blessed.Widgets.ListElement| undefined;
-    private _activityLog: Blessed.Widgets.ListElement | undefined;
+    private _screen!: Blessed.Widgets.Screen;
+    private _layout!: Blessed.Widgets.LayoutElement;
+    private _input!: Blessed.Widgets.TextareaElement;
+    private _chat!: Blessed.Widgets.ListElement;
+    private _status!: Blessed.Widgets.ListElement;
+    private _activityLog!: Blessed.Widgets.ListElement;
 
-    constructor() {
-    }
+    constructor() {  }
 
     private _baseComponent(): Blessed.Widgets.ListOptions<Blessed.Widgets.ListElementStyle> {
         return {

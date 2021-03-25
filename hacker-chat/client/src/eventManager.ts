@@ -2,14 +2,24 @@ import EventEmitter from "events"
 import { constants } from "./constants"
 import SocketClient from "./socket"
 
+interface IEventManager {
+    socketClient: SocketClient,
+    componentEmitter: EventEmitter
+}
+
+interface User {
+    id: string
+    username: string
+}
+
 export default class EventManager {
     [k: string]: any
 
-    private allUsers = new Map()
+    private allUsers: Map<string, string> = new Map()
     componentEmitter: EventEmitter
     socketClient: SocketClient
 
-    constructor({ componentEmitter, socketClient }: { socketClient: SocketClient, componentEmitter: EventEmitter }) {
+    constructor({ componentEmitter, socketClient }: IEventManager) {
         this.componentEmitter = componentEmitter
         this.socketClient = socketClient
     }
@@ -22,35 +32,44 @@ export default class EventManager {
         })
     }
 
-    newUserConnected(message: any) {
-        const user = message
-        this.allUsers.set(user.id, user.username)
+    newUserConnected(user: User) {
+        const newUser = user
+        this.allUsers.set(newUser.id, newUser.username)
 
         this.updateUsersComponent()
-        this.updateActivityLogComponent(`${user.username} joined!`)
+        this.updateActivityLogComponent(`${newUser.username} joined!`)
     }
 
-    updateUsers(users: []) {
+    updateUsers(users: User[]) {
         const connectedUsers = users
-        connectedUsers.forEach(({id, username}) => this.allUsers.set(id, username))
+        connectedUsers.forEach(({ id, username }) => this.allUsers.set(id, username))
         this.updateUsersComponent()
     }
 
-    private emitComponentUpdate(event: string, message: any) {
-        this.componentEmitter.emit(
-            event,
-            message
-        )
+    disconnectUser(user: User) {
+        const { username, id } = user
+        this.allUsers.delete(id)
+
+        this.updateActivityLogComponent(`${username} left!`)
+        this.updateUsersComponent()
     }
 
     private updateActivityLogComponent(message: string) {
-        this.emitComponentUpdate(
+        this.componentEmitter.emit(
             constants.events.app.ACTIVITYLOG_UPDATED,
             message
         )
     }
+
+    message(message: string) {
+        this.componentEmitter.emit(
+            constants.events.app.MESSAGE_RECEIVED,
+            message
+        )
+    }
+
     private updateUsersComponent() {
-        this.emitComponentUpdate(
+        this.componentEmitter.emit(
             constants.events.app.STATUS_UPDATED,
             Array.from(this.allUsers.values())
         )
@@ -60,8 +79,8 @@ export default class EventManager {
         const functions: any[] = Reflect.ownKeys(EventManager.prototype)
             .filter(fn => fn != 'constructor')
             .map(name => [name, this[String(name)].bind(this)])
-        
-        return new Map(functions)  as Map<string, any>
+
+        return new Map(functions) as Map<string, () => void>
     }
 
 

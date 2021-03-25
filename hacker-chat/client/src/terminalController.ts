@@ -30,7 +30,7 @@ export default class TerminalController {
         return function (this: any) {
             const message = this.getValue();
             eventEmitter.emit(constants.events.app.MESSAGE_SENT, message)
-            this.clearValue;
+            this.clearValue();
         }
     }
 
@@ -38,8 +38,8 @@ export default class TerminalController {
         return (msg: { username: string, message: string }) => {
             const { username, message } = msg;
             const color = this._getUserColor(username);
-            chat?.addItem(`{${color}}{bold}${username}:{/} ${message}`);
-            screen?.render();
+            chat.addItem(`{${color}}{bold}${username}:{/} ${message}`);
+            screen.render();
         }
     }
 
@@ -47,21 +47,21 @@ export default class TerminalController {
         return (msg: string) => {
             const [username] = msg.split(/\s/);
             const color = this._getUserColor(username);
-            activityLog?.addItem(`{${color}}{bold}${msg}{/}`);
-            screen?.render();
+            activityLog.addItem(`{${color}}{bold}${msg}{/}`);
+            screen.render();
         }
     }
 
     private _onStatusChanged({ screen, status }: IComponentBuild) {
         return (users: []) => {
-            const item = status?.shiftItem();
-            status?.clearItems();
-            status?.addItem(item?.content?? '')
+            const item = status.shiftItem();
+            status.clearItems();
+            status.addItem(item.content)
             users.forEach((username)=> {
                 const color = this._getUserColor(username);
-                status?.addItem(`{${color}}{bold}${username}{/}`);
+                status.addItem(`{${color}}{bold}${username}{/}`);
             })
-            screen?.render();
+            screen.render();
         }
     }
 
@@ -77,13 +77,13 @@ export default class TerminalController {
             .setLayoutComponent()
             .setInputComponent(this._onInputReceived(eventEmitter))
             .setChatComponent()
-            .setStatusComponent()
             .setActivityLogComponent()
+            .setStatusComponent()
             .build()
 
         this._registerEvents(eventEmitter, components);
 
-        components.input?.focus();
-        components.screen?.render();
+        components.input.focus();
+        components.screen.render();
     }
 }

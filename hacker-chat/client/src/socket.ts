@@ -20,11 +20,10 @@ export default class SocketClient {
         const data = JSON.stringify({ event, message })
     }
 
-    attachEvents(events: Map<string, any>) {
+    attachEvents(events: Map<string, () => void>) {
         this._serverConnection.on('data', data => {
             try {
-                data
-                    .toString()
+                data.toString()
                     .split('\n')
                     .filter(line => !!line)
                     .map(line => JSON.parse(line))
@@ -36,7 +35,7 @@ export default class SocketClient {
             }
         })
 
-        for(const [key, value] of events) {
+        for (const [key, value] of events) {
             this._serverListener.on(key, value)
         }
     }
@@ -62,6 +61,5 @@ export default class SocketClient {
 
     async initialize() {
         this._serverConnection = await this.createConnection()
-        console.log('client connected o serve')
     }
 }

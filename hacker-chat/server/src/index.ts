@@ -5,7 +5,7 @@ import Controller from "./controller";
 
 const eventEmitter = new Event();
 
-const port = !process.env.PORT ? 9898 : parseInt(process.env.PORT);
+const port = !process.env.PORT ? 9898 : Number(process.env.PORT);
 const socketServer = new SocketServer({ port })
 async function main() {
     const server = await socketServer.initialize(eventEmitter)

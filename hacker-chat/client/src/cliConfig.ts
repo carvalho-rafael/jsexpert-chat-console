@@ -24,8 +24,8 @@ export default class CliConfig {
         this.protocol = protocol.replace(/\W/, '')
     }
 
-    static parseArguments(commands: Array<string>) {
-        let cmd = new Map();
+    static parseArguments(commands: string[]) {
+        const cmd = new Map();
 
         commands.forEach((command, index) => {
             const commandPreffix = '--';

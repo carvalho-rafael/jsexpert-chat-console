@@ -3,7 +3,7 @@ import ISocket from "./interfaces/ISocket";
 import SocketServer from "./socket";
 
 interface User {
-    id?: string
+    id: string
     socket?: ISocket
     username?: string
     roomId?: string
@@ -12,8 +12,8 @@ interface User {
 export default class Controller {
     [k: string]: any;
 
-    users: Map<any, User> = new Map()
-    rooms = new Map()
+    users: Map<string, User> = new Map()
+    rooms: Map<string, Map<string, User>> = new Map()
     socketServer: SocketServer;
 
     constructor(socketServer: SocketServer) {
@@ -22,7 +22,6 @@ export default class Controller {
 
     onNewConnection(socket: ISocket) {
         const { id } = socket;
-        console.log('connection stablished with', id)
         const userData: User = { id, socket }
 
         this.updateGlobalUserData(id, userData)
@@ -32,13 +31,14 @@ export default class Controller {
         socket.on('end', this.onSocketClosed(id))
     }
 
-    broadcast({socketId, roomId, event, message, includeCurrentSocket = false}: any) {
+    broadcast({ socketId, roomId, event, message, includeCurrentSocket = false }: any) {
         const usersOnRoom = this.rooms.get(roomId)
 
-        for(const [key, user] of usersOnRoom) {
-            if(!includeCurrentSocket && key === socketId) continue
-            this.socketServer.sendMessage(user.socket, event, message)
-        }
+        if (usersOnRoom)
+            for (const [key, user] of usersOnRoom) {
+                if (!includeCurrentSocket && key === socketId) continue
+                this.socketServer.sendMessage(user?.socket, event, message)
+            }
     }
 
     async joinRoom(socketId: string, data: User) {
@@ -48,24 +48,35 @@ export default class Controller {
         console.log(`${userData.username} joined: ${socketId}`)
         const { roomId } = userData
 
-        const users = this.joinUserInRoom(roomId, user)
+        const users = this.joinUserInRoom(String(roomId), user)
 
         const currentUsers = (Array.from(users.values()) as User[])
             .map(({ id, username }) => ({ id, username }))
 
-            console.log(currentUsers)
         this.socketServer
             .sendMessage(user?.socket, constants.events.UPDATE_USERS, currentUsers)
-            
+
         this.broadcast({
             socketId,
             roomId,
-            message: {id: socketId, username: user?.username},
+            message: { id: socketId, username: user?.username },
             event: constants.events.NEW_USER_CONNECTED
         })
     }
 
-    joinUserInRoom(roomId: string | undefined, user: any) {
+    message(socketId: string, message: string) {
+        const user = this.users.get(socketId)
+        
+        this.broadcast({
+            socketId,
+            roomId: user?.roomId,
+            message: { username: user?.username, message: message },
+            event: constants.events.MESSAGE,
+            includeCurrentSocket: true
+        })
+    }
+
+    joinUserInRoom(roomId: string, user: any) {
         const usersOnRoom = this.rooms.get(roomId) ?? new Map()
         usersOnRoom.set(user.id, user)
 
@@ -74,30 +85,42 @@ export default class Controller {
         return usersOnRoom
     }
 
-    onSocketData(id: string) {
+    private logoutUser(id: string, roomId: string) {
+        this.users.delete(id)
+        const usersOnRoom = this.rooms.get(roomId)
+        usersOnRoom?.delete(id)
+
+        if (usersOnRoom)
+            this.rooms.set(roomId, usersOnRoom);
+    }
+
+    private onSocketData(id: string) {
         return (data: string) => {
             try {
                 const { event, message } = JSON.parse(data)
-                console.log(event)
                 this[event](id, message)
-
             } catch (error) {
                 console.error('Wrong event format', error)
             }
-
-            console.log('onsocketdata', data.toString())
         }
     }
 
-    onSocketClosed(id: string) {
-        return (data: any) => {
-            console.log('onSocketClosed', id)
+    private onSocketClosed(id: string) {
+        return (_: void) => {
+            const user = this.users.get(id)
+            this.logoutUser(id, String(user?.roomId))
+            this.broadcast({
+                roomId: user?.roomId,
+                message: { id, username: user?.username },
+                socketId: id,
+                event: constants.events.DISCONNECT_USER
+            })
         }
     }
 
     updateGlobalUserData(socketId: string, userData: User) {
         const users = this.users
-        const user = users.get(socketId) ?? {}
+        const user = users.get(socketId)
 
         const updatedUserData = {
             ...user,
