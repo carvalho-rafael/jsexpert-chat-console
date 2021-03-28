@@ -17,9 +17,7 @@ export default class ComponentBuilder {
             border: 'line',
             keys: true,
             top: 0,
-            scrollbar: {
-                ch: ' ',
-            },
+            shrink: false,
             tags: true
         }
     }
@@ -34,27 +32,33 @@ export default class ComponentBuilder {
 
         return this;
     }
+
     setLayoutComponent() {
         this._layout = Blessed.layout({
             parent: this._screen,
             width: '100%',
             height: '100%',
-            layout: 'inline-block'
+            layout: 'inline-block',
+            border: {
+                type: 'line',
+                bg: 2,
+            },
+            align: 'right'
         })
 
         return this;
     }
+    
     setInputComponent(onEnterPressed: () => void) {
         const input = Blessed.textarea({
-            parent: this._screen,
-            bottom: 0,
-            height: '10%',
+            parent: this._layout,
+            height: '9%',
+            width:'100%-2',
+
             inputOnFocus: true,
             padding: {
-                top: 1,
-                left: 2
+                left: 2,
             },
-            fg: '#f6f6f6',
             bg: '#353535',
         })
 
@@ -68,9 +72,10 @@ export default class ComponentBuilder {
         this._chat = Blessed.list({
             ...this._baseComponent(),
             parent: this._layout,
+            scrollable: true,
             align: 'left',
-            width: '50%',
-            height: '90%',
+            width: '50%-1',
+            height: '90%-1',
             items: ['{bold}Message{/}']
         })
 
@@ -82,7 +87,7 @@ export default class ComponentBuilder {
             ...this._baseComponent(),
             parent: this._layout,
             width: '25%',
-            height: '90%',
+            height: '90%-1',
             items: ['{bold}Users in room{/}']
         })
         return this;
@@ -93,8 +98,7 @@ export default class ComponentBuilder {
             ...this._baseComponent(),
             parent: this._layout,
             width: '25%',
-            height: '90%',
-            fg: 'yellow',
+            height: '90%-1',
             items: ['{bold}Activity Log{/}']
         })
 

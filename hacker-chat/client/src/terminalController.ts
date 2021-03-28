@@ -75,10 +75,10 @@ export default class TerminalController {
         const components = new ComponentBuilder()
             .setScreen({ title: 'Hacker-chat - Rafael' })
             .setLayoutComponent()
-            .setInputComponent(this._onInputReceived(eventEmitter))
             .setChatComponent()
             .setActivityLogComponent()
             .setStatusComponent()
+            .setInputComponent(this._onInputReceived(eventEmitter))
             .build()
 
         this._registerEvents(eventEmitter, components);
